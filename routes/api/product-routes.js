@@ -3,34 +3,26 @@
 const router = require('express').Router();
 const { Product, Category, Tag, ProductTag } = require('../../models');
 
-// The `/api/products` endpoint
-
-// get all products
 router.get('/', async (req, res) => {
-	// find all products
-	// be sure to include its associated Category and Tag data
-	// to do include other models in response
 	try {
 		const data = await Product.findAll({ include: [Category, { model: Tag, through: ProductTag }] });
 		res.json(data);
 	} catch (err) {
+		console.log("err: ", err);
 		res.status(500).json({ msg: "an error occurred: ", err });
 	}
 });
 
-// get one product
 router.get('/:id', async (req, res) => {
-	// find a single product by its `id`
-	// be sure to include its associated Category and Tag data
 	try {
 		const data = await Product.findByPk(req.params.id, { include: [Category, { model: Tag, through: ProductTag }] });
-		res.json(data);
+		data === null ? res.status(204).json(data) : res.json(data);
 	} catch (err) {
+		console.log("err: ", err);
 		res.status(500).json({ msg: "an error occurred: ", err });
 	}
 });
 
-// create new product
 router.post('/', (req, res) => {
 	/* req.body should look like this...
 		{
@@ -57,12 +49,14 @@ router.post('/', (req, res) => {
 		})
 		.then((productTagIds) => res.status(200).json(productTagIds))
 		.catch((err) => {
-			console.log(err);
-			res.status(400).json(err);
+			console.log("err: ", err);
+			if (err && err.err && err.err.name === "SequelizeValidationError") {
+				res.status(400).json(err);
+			}
+			res.status(500).json({ msg: "an error occurred: ", err });
 		});
 });
 
-// update product
 router.put('/:id', async (req, res) => {
 	// update product data
 	Product.update(req.body, {
@@ -99,17 +93,20 @@ router.put('/:id', async (req, res) => {
 		})
 		.then((updatedProductTags) => res.json(updatedProductTags))
 		.catch((err) => {
-			// console.log(err);
-			res.status(400).json(err);
+			console.log("err: ", err);
+			if (err && err.err && err.err.name === "SequelizeValidationError") {
+				res.status(400).json(err);
+			}
+			res.status(500).json({ msg: "an error occurred: ", err });
 		});
 });
 
 router.delete('/:id', async (req, res) => {
 	try {
 		const data = await Product.destroy({ where: { id: req.params.id } });
-		console.log("deleted data: ", data);
-		res.json(data);
+		data === 0 ? res.status(204).json(data) : res.json(data);
 	} catch (err) {
+		console.log("err: ", err);
 		res.status(500).json({ msg: "an error occurred: ", err });
 	}
 });
